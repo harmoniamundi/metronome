@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tempus fugit</title>
+<style>
+  :root {
+    --bg-dark: #000000;
+    --text-white: #ffffff;
+    --text-dim: #9a9ab0;
+    --accent-glow: rgba(255, 255, 255, 0.15);
+  }
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Eurostile Extended", "Eurostile", "Microgramma", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-white);
+    overflow: hidden;
+  }
+
+  .metronome-wrapper {
+    position: relative;
+    width: 460px;
+    height: 590px;
+    filter: drop-shadow(0 25px 35px rgba(0, 0, 0, 0.9));
+    transform-origin: center center;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+
+  .body-svg {
+    position: absolute;
+    top: 0;
+    left: 55px;
+    width: 350px;
+    height: 100%;
+    z-index: 1;
+  }
+
+  .metronome-content {
+    position: absolute;
+    top: 0;
+    left: 55px;
+    width: 350px;
+    height: 100%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: visible;
+  }
+
+  .scale-ladder {
+    position: absolute;
+    top: 50px;
+    width: 170px;
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .scale-step {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .tick-line {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.35);
+    width: 20px;
+  }
+
+  .tick-line.major {
+    width: 38px;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .scale-number {
+    position: absolute;
+    left: 112px;
+    width: 26px;
+    text-align: left;
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pendulum-pivot {
+    position: absolute;
+    bottom: 160px;
+    left: 50%;
+    width: 0;
+    height: 0;
+    z-index: 5;
+    transform-origin: center center;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .rod {
+    position: absolute;
+    bottom: -45px;
+    left: -3px;
+    width: 6px;
+    height: 410px;
+    background: linear-gradient(to right, #ffffff, #dcdcdc, #aaaaaa);
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+  }
+
+  .rod-base {
+    position: absolute;
+    bottom: -48px;
+    left: -12px;
+    width: 24px;
+    height: 22px;
+    background: linear-gradient(to bottom, #ffffff, #777777);
+    clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+    cursor: pointer;
+  }
+
+  .weight {
+    position: absolute;
+    left: -23px;
+    width: 46px;
+    height: 24px;
+    background: linear-gradient(180deg, #44454a 0%, #1a1b1e 60%, #2e2f34 100%);
+    border: 1px solid #666;
+    border-radius: 2px 2px 4px 4px;
+    cursor: grab;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 6;
+  }
+
+  .weight.disabled {
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
+  .weight-top-bar {
+    width: 100%;
+    height: 3px;
+    background: #ffffff;
+    box-shadow: 0 0 6px rgba(255,255,255,1);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+  }
+
+  .weight:not(.disabled):active {
+    cursor: grabbing;
+  }
+
+  .bottom-panel {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 160px;
+    background: transparent;
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 20px 28px;
+    z-index: 7;
+  }
+
+  .hub-circle {
+    position: absolute;
+    top: -33px;
+    width: 66px;
+    height: 66px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #2d2f36, #0e0f12);
+    border: 2px solid #555660;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .bpm-val {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  .bpm-unit {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+
+  .display-row {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 18px;
+    padding-right: 45px;
+  }
+
+  .param-box {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #0d0e12 0%, #040406 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03), 0 2px 4px rgba(0, 0, 0, 0.9);
+  }
+
+  .param-box.clickable {
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .param-box.clickable:hover {
+    background: linear-gradient(180deg, #161820 0%, #090a0d 100%);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08), 0 3px 6px rgba(0, 0, 0, 0.9);
+  }
+
+  .param-box.clickable:active {
+    background: linear-gradient(180deg, #030304 0%, #101116 100%);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.95);
+    transform: translateY(1px);
+  }
+
+  .param-num {
+    font-size: 17px;
+    font-weight: 700;
+    color: #8a8a98;
+  }
+
+  .param-lbl {
+    font-size: 10px;
+    color: #4a4a58;
+  }
+
+  .tempo-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    margin-top: 2px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .tempo-name:hover {
+    color: #d0d0e0;
+  }
+
+  .btn-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    margin-bottom: 6px;
+  }
+
+  .touch-btn {
+    background: none;
+    border: none;
+    color: #d0d0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 15px;
+    transition: color 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+
+  .touch-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  .touch-btn:not(:disabled):hover, .touch-btn:not(:disabled):active {
+    color: #ffffff;
+  }
+
+  .touch-btn svg.arrow-icon {
+    width: 22px;
+    height: 10px;
+    margin-bottom: 4px;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    fill: none;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.4));
+  }
+
+  .touch-btn .lbl {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .popover-menu {
+    position: absolute;
+    left: 275px;
+    bottom: 45px;
+    background: linear-gradient(180deg, #252730 0%, #111216 100%);
+    border: 1px solid #555660;
+    border-radius: 8px;
+    padding: 12px;
+    display: none;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.95), inset 0 1px 2px rgba(255,255,255,0.15);
+    z-index: 10;
+    width: 195px;
+    font-family: inherit;
+  }
+
+  #beatMenu.open {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .popover-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b0b0c2;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .beat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .beat-opt {
+    padding: 6px 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    background: radial-gradient(circle at 35% 35%, #2a2c34, #18191f);
+    border: 1px solid #444550;
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .beat-opt:hover {
+    border-color: #888;
+    color: #fff;
+  }
+
+  .beat-opt.active {
+    background: linear-gradient(180deg, #ffffff 0%, #cccccc 100%);
+    color: #000000;
+    border-color: #ffffff;
+    box-shadow: 0 0 8px rgba(255,255,255,0.4);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+  }
+
+  .toggle-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    color: #c0c0d0;
+    line-height: 1.2;
+    max-width: 120px;
+  }
+
+  .toggle-switch {
+    width: 36px;
+    height: 20px;
+    background: #1a1b20;
+    border: 1px solid #444550;
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch.on {
+    background: #e0e0e0;
+    border-color: #ffffff;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+  }
+
+  .toggle-knob {
+    width: 14px;
+    height: 14px;
+    background: #666770;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .toggle-switch.on .toggle-knob {
+    transform: translateX(16px);
+    background: #111216;
+  }
+</style>
+</head>
+<body>
+
+<div class="metronome-wrapper" id="metronomeWrapper">
+  <svg class="body-svg" viewBox="0 0 350 590">
+    <defs>
+      <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#1e1f25"/>
+        <stop offset="60%" stop-color="#0c0d10"/>
+        <stop offset="100%" stop-color="#040405"/>
+      </linearGradient>
+      <linearGradient id="silverBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="25%" stop-color="#777777"/>
+        <stop offset="50%" stop-color="#222222"/>
+        <stop offset="100%" stop-color="#cccccc"/>
+      </linearGradient>
+    </defs>
+    <path d="M 115,14 C 150,6 200,6 235,14 C 258,19 270,32 277,52 L 335,498 C 345,532 328,565 292,576 C 230,587 120,587 58,576 C 22,565 5,532 15,498 L 73,52 C 80,32 92,19 115,14 Z" 
+          fill="url(#bodyGrad)" stroke="url(#silverBorder)" stroke-width="3" stroke-linejoin="round"/>
+  </svg>
+
+  <div class="metronome-content">
+    <div class="scale-ladder" id="scaleLadder"></div>
+
+    <div class="pendulum-pivot" id="pendulum">
+      <div class="rod" id="rodEl"></div>
+      <div class="rod-base" id="rodBaseEl"></div>
+      <div class="weight" id="weight">
+        <div class="weight-top-bar"></div>
+      </div>
+    </div>
+
+    <div class="bottom-panel">
+      <div class="hub-circle" id="hubBtn">
+        <span class="bpm-val" id="bpmDisplay">80</span>
+        <span class="bpm-unit">bpm</span>
+      </div>
+
+      <div class="display-row">
+        <div class="param-box clickable" id="batBtn">
+          <span class="param-num" id="batDisplay">4</span>
+          <span class="param-lbl">bat</span>
+        </div>
+      </div>
+
+      <div class="tempo-name" id="tempoText">Andante</div>
+
+      <div class="btn-row">
+        <button class="touch-btn" id="slowerBtn">
+          <svg class="arrow-icon" viewBox="0 0 24 10">
+            <path d="M 2,8 Q 12,1 22,8" />
+          </svg>
+          <span class="lbl">+lent</span>
+        </button>
+        <button class="touch-btn" id="fasterBtn">
+          <svg class="arrow-icon" viewBox="0 0 24 10">
+            <path d="M 2,2 Q 12,9 22,2" />
+          </svg>
+          <span class="lbl">+rapide</span>
+        </button>
+      </div>
+
+      <div class="popover-menu" id="beatMenu"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const wrapperEl = document.getElementById('metronomeWrapper');
+
+  function resizeMetronome() {
+    const baseWidth = 460;
+    const baseHeight = 590;
+    const margin = 16;
+    
+    const availableWidth = window.innerWidth - margin;
+    const availableHeight = window.innerHeight - margin;
+
+    const scaleX = availableWidth / baseWidth;
+    const scaleY = availableHeight / baseHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    wrapperEl.style.transform = `scale(${scale})`;
+  }
+
+  window.addEventListener('resize', resizeMetronome);
+  window.addEventListener('orientationchange', resizeMetronome);
+
+  const MIN_BPM = 20;
+  const MAX_BPM = 240;
+
+  const MIN_Y = -380;
+  const MAX_Y = -60;
+
+  let bpm = 80;
+  let targetBpm = 80;
+  let activeBpm = 80;
+  let visualBpm = 80;
+  let beatsPerMeasure = 4;
+  let accentEnabled = false;
+  let currentBeat = 0;
+  let isRunning = false;
+  let isStopping = false;
+  let stopStartTime = 0;
+  let stopStartAngle = 0;
+  let stopDuration = 0;
+
+  let audioCtx = null;
+  let nextNoteTime = 0.0;
+  let timerID = null;
+  let animFrameReq = null;
+  let audioStartTime = 0;
+
+  let isTransitioningBpm = false;
+  let bpmTransitionAnim = null;
+
+  const pendulum = document.getElementById('pendulum');
+  const weight = document.getElementById('weight');
+  const rodEl = document.getElementById('rodEl');
+  const rodBaseEl = document.getElementById('rodBaseEl');
+  const bpmDisplay = document.getElementById('bpmDisplay');
+  const tempoText = document.getElementById('tempoText');
+  const scaleLadder = document.getElementById('scaleLadder');
+  const hubBtn = document.getElementById('hubBtn');
+  const slowerBtn = document.getElementById('slowerBtn');
+  const fasterBtn = document.getElementById('fasterBtn');
+
+  const batBtn = document.getElementById('batBtn');
+  const batDisplay = document.getElementById('batDisplay');
+  const beatMenu = document.getElementById('beatMenu');
+
+  const bpmStepsTopToBottom = [20, 30, 40, 50, 60, 72, 80, 96, 112, 126, 144, 160, 184, 208, 240];
+  const steps = [20, 30, 40, 50, 60, 72, 80, 96, 112, 126, 144, 160, 184, 208, 240];
+
+  function buildScale() {
+    scaleLadder.innerHTML = '';
+    const totalSteps = 28;
+    for (let i = 0; i <= totalSteps; i++) {
+      const stepEl = document.createElement('div');
+      stepEl.className = 'scale-step';
+      const isMajor = i % 2 === 0;
+      const tick = document.createElement('div');
+      tick.className = `tick-line ${isMajor ? 'major' : ''}`;
+      stepEl.appendChild(tick);
+
+      if (isMajor) {
+        const idx = i / 2;
+        if (idx < bpmStepsTopToBottom.length) {
+          const num = document.createElement('div');
+          num.className = 'scale-number';
+          num.textContent = bpmStepsTopToBottom[idx];
+          stepEl.appendChild(num);
+        }
+      }
+      scaleLadder.appendChild(stepEl);
+    }
+  }
+  buildScale();
+
+  function buildBeatMenu() {
+    beatMenu.innerHTML = '';
+
+    const title = document.createElement('div');
+    title.className = 'popover-title';
+    title.textContent = 'Temps par mesure';
+    beatMenu.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'beat-grid';
+
+    for (let i = 1; i <= 12; i++) {
+      const opt = document.createElement('div');
+      opt.className = `beat-opt ${i === beatsPerMeasure ? 'active' : ''}`;
+      opt.textContent = i;
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        beatsPerMeasure = i;
+        batDisplay.textContent = i;
+        currentBeat = 0;
+        buildBeatMenu();
+      });
+      grid.appendChild(opt);
+    }
+    beatMenu.appendChild(grid);
+
+    const toggleRow = document.createElement('div');
+    toggleRow.className = 'toggle-row';
+    
+    const toggleLbl = document.createElement('span');
+    toggleLbl.className = 'toggle-lbl';
+    toggleLbl.textContent = 'Accentuer le premier temps';
+
+    const switchEl = document.createElement('div');
+    switchEl.className = `toggle-switch ${accentEnabled ? 'on' : ''}`;
+    
+    const knob = document.createElement('div');
+    knob.className = 'toggle-knob';
+    switchEl.appendChild(knob);
+
+    toggleRow.appendChild(toggleLbl);
+    toggleRow.appendChild(switchEl);
+
+    toggleRow.addEventListener('click', (e) => {
+      e.stopPropagation();
+      accentEnabled = !accentEnabled;
+      buildBeatMenu();
+    });
+
+    beatMenu.appendChild(toggleRow);
+  }
+  buildBeatMenu();
+
+  batBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    beatMenu.classList.toggle('open');
+  });
+
+  window.addEventListener('click', () => {
+    beatMenu.classList.remove('open');
+  });
+
+  const tempoCategories = [
+    { name: 'Larghissimo', max: 30, targetBpm: 20 },
+    { name: 'Grave', max: 45, targetBpm: 35 },
+    { name: 'Largo', max: 60, targetBpm: 50 },
+    { name: 'Larghetto', max: 66, targetBpm: 63 },
+    { name: 'Adagio', max: 76, targetBpm: 70 },
+    { name: 'Andante', max: 108, targetBpm: 90 },
+    { name: 'Moderato', max: 120, targetBpm: 114 },
+    { name: 'Allegro', max: 156, targetBpm: 135 },
+    { name: 'Vivace', max: 176, targetBpm: 166 },
+    { name: 'Presto', max: 200, targetBpm: 188 },
+    { name: 'Prestissimo', max: 241, targetBpm: 220 }
+  ];
+
+  function getTempoName(val) {
+    if (val < 30) return 'Larghissimo';
+    if (val < 45) return 'Grave';
+    if (val < 60) return 'Largo';
+    if (val < 66) return 'Larghetto';
+    if (val < 76) return 'Adagio';
+    if (val < 108) return 'Andante';
+    if (val < 120) return 'Moderato';
+    if (val < 156) return 'Allegro';
+    if (val < 176) return 'Vivace';
+    if (val < 200) return 'Presto';
+    return 'Prestissimo';
+  }
+
+  function handleTempoTierChange(direction = 'next') {
+    if (isRunning || isStopping) return;
+    
+    let currentCatIdx = 0;
+    for (let i = 0; i < tempoCategories.length; i++) {
+      if (targetBpm < tempoCategories[i].max) {
+        currentCatIdx = i;
+        break;
+      }
+    }
+    
+    let nextCatIdx = currentCatIdx;
+
+    if (direction === 'prev') {
+      if (currentCatIdx > 0) {
+        nextCatIdx = currentCatIdx - 1;
+      }
+    } else {
+      if (currentCatIdx < tempoCategories.length - 1) {
+        nextCatIdx = currentCatIdx + 1;
+      }
+    }
+
+    if (nextCatIdx === currentCatIdx) {
+      stopTierHold();
+      return;
+    }
+
+    const newTarget = tempoCategories[nextCatIdx].targetBpm;
+    smoothTransitionToBpm(newTarget, false);
+  }
+
+  function handleTempoTextClick(e) {
+    if (isRunning || isStopping) return;
+    e.stopPropagation();
+    handleTempoTierChange(e.shiftKey ? 'prev' : 'next');
+  }
+
+  tempoText.addEventListener('click', handleTempoTextClick);
+
+  function smoothTransitionToBpm(targetVal, isFastReset) {
+    if (isRunning || isStopping) return;
+    if (isTransitioningBpm && bpmTransitionAnim) {
+      cancelAnimationFrame(bpmTransitionAnim);
+    }
+
+    isTransitioningBpm = true;
+    const startBpm = targetBpm;
+    const startTimeAnim = performance.now();
+    const duration = isFastReset ? 150 : 350;
+
+    function animateBpmStep(now) {
+      if (isRunning || isStopping) {
+        isTransitioningBpm = false;
+        return;
+      }
+      const elapsed = now - startTimeAnim;
+      const progress = Math.min(1, elapsed / duration);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      
+      const currentVal = startBpm + (targetVal - startBpm) * easeProgress;
+      setTargetBpmDirect(currentVal);
+
+      if (progress < 1) {
+        bpmTransitionAnim = requestAnimationFrame(animateBpmStep);
+      } else {
+        setTargetBpmDirect(targetVal);
+        isTransitioningBpm = false;
+      }
+    }
+
+    bpmTransitionAnim = requestAnimationFrame(animateBpmStep);
+  }
+
+  function bpmToY(val) {
+    const clamped = Math.max(MIN_BPM, Math.min(MAX_BPM, val));
+    for (let i = 0; i < steps.length - 1; i++) {
+      if (clamped >= steps[i] && clamped <= steps[i + 1]) {
+        const ratio = (clamped - steps[i]) / (steps[i + 1] - steps[i]);
+        const y1 = MIN_Y + (i * (MAX_Y - MIN_Y) / (steps.length - 1));
+        const y2 = MIN_Y + ((i + 1) * (MAX_Y - MIN_Y) / (steps.length - 1));
+        return y1 + ratio * (y2 - y1);
+      }
+    }
+    return MIN_Y;
+  }
+
+  function yToBpm(y) {
+    const clampedY = Math.max(MIN_Y, Math.min(MAX_Y, y));
+    const indexFrac = ((clampedY - MIN_Y) / (MAX_Y - MIN_Y)) * (steps.length - 1);
+    const i = Math.min(Math.floor(indexFrac), steps.length - 2);
+    const ratio = indexFrac - i;
+    return steps[i] + ratio * (steps[i + 1] - steps[i]);
+  }
+
+  function updateUI(displayVal) {
+    const rounded = Math.round(displayVal);
+    bpmDisplay.textContent = rounded;
+    tempoText.textContent = getTempoName(rounded);
+    weight.style.top = `${bpmToY(displayVal)}px`;
+  }
+
+  function setTargetBpmDirect(newBpm) {
+    if (isRunning || isStopping) return;
+    targetBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, newBpm));
+    bpm = Math.round(targetBpm);
+    activeBpm = targetBpm;
+    visualBpm = targetBpm;
+    updateUI(visualBpm);
+  }
+
+  function updateTargetAndUI(newBpm) {
+    targetBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, newBpm));
+    bpm = Math.round(targetBpm);
+    activeBpm = targetBpm;
+    visualBpm = targetBpm;
+    updateUI(visualBpm);
+  }
+
+  let isDraggingWeight = false;
+
+  function handleWeightStart(e) {
+    if (isRunning || isStopping) return;
+    if (isTransitioningBpm) {
+      isTransitioningBpm = false;
+      if (bpmTransitionAnim) cancelAnimationFrame(bpmTransitionAnim);
+    }
+    isDraggingWeight = true;
+    e.stopPropagation();
+  }
+
+  function handleWeightMove(e) {
+    if (!isDraggingWeight || isRunning || isStopping) return;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const pivotRect = pendulum.getBoundingClientRect();
+    
+    const wrapperRect = wrapperEl.getBoundingClientRect();
+    const currentScale = wrapperRect.height / 590;
+    
+    const relativeY = (clientY - pivotRect.top) / currentScale;
+    const newBpm = yToBpm(relativeY);
+    targetBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, newBpm));
+    bpm = Math.round(targetBpm);
+    activeBpm = targetBpm;
+    visualBpm = targetBpm;
+    updateUI(visualBpm);
+  }
+
+  function handleWeightEnd() {
+    isDraggingWeight = false;
+  }
+
+  weight.addEventListener('mousedown', handleWeightStart);
+  window.addEventListener('mousemove', handleWeightMove);
+  window.addEventListener('mouseup', handleWeightEnd);
+
+  weight.addEventListener('touchstart', handleWeightStart, { passive: true });
+  window.addEventListener('touchmove', handleWeightMove, { passive: true });
+  window.addEventListener('touchend', handleWeightEnd);
+
+  const toggleClick = (e) => {
+    e.stopPropagation();
+    toggleMetronome();
+  };
+  rodEl.addEventListener('click', toggleClick);
+  rodBaseEl.addEventListener('click', toggleClick);
+
+  let holdTimer = null;
+  let isHoldingActive = false;
+
+  function startHold(delta) {
+    if (isRunning || isStopping) return;
+    if (isTransitioningBpm) {
+      isTransitioningBpm = false;
+      if (bpmTransitionAnim) cancelAnimationFrame(bpmTransitionAnim);
+    }
+
+    updateTargetAndUI(targetBpm + delta);
+    if (targetBpm <= MIN_BPM || targetBpm >= MAX_BPM) return;
+    
+    isHoldingActive = true;
+
+    if (holdTimer) clearTimeout(holdTimer);
+    if (animFrameReq) cancelAnimationFrame(animFrameReq);
+
+    holdTimer = setTimeout(() => {
+      if (!isHoldingActive) return;
+      const holdStartTimeLoop = performance.now();
+
+      function accelerateLoop(timestamp) {
+        if (!isHoldingActive) return;
+        const elapsed = (timestamp - holdStartTimeLoop) / 1000;
+        const speed = Math.min(220, 6 * Math.exp(2.8 * elapsed));
+        const dt = 0.016;
+
+        let nextVal = targetBpm + delta * speed * dt;
+        updateTargetAndUI(nextVal);
+
+        if (targetBpm <= MIN_BPM || targetBpm >= MAX_BPM) {
+          stopHold();
+          return;
+        }
+
+        animFrameReq = requestAnimationFrame(accelerateLoop);
+      }
+      animFrameReq = requestAnimationFrame(accelerateLoop);
+    }, 250);
+  }
+
+  function stopHold() {
+    isHoldingActive = false;
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    if (animFrameReq) {
+      cancelAnimationFrame(animFrameReq);
+      animFrameReq = null;
+    }
+  }
+
+  let tierHoldTimer = null;
+  let tierAnimFrame = null;
+  let isTierHoldingActive = false;
+
+  function startTierHold(direction) {
+    if (isRunning || isStopping) return;
+    if (isTransitioningBpm) {
+      isTransitioningBpm = false;
+      if (bpmTransitionAnim) cancelAnimationFrame(bpmTransitionAnim);
+    }
+
+    let currentCatIdx = 0;
+    for (let i = 0; i < tempoCategories.length; i++) {
+      if (targetBpm < tempoCategories[i].max) {
+        currentCatIdx = i;
+        break;
+      }
+    }
+    if ((direction === 'prev' && currentCatIdx === 0) || (direction === 'next' && currentCatIdx === tempoCategories.length - 1)) {
+      return;
+    }
+
+    handleTempoTierChange(direction);
+    isTierHoldingActive = true;
+
+    if (tierHoldTimer) clearTimeout(tierHoldTimer);
+    if (tierAnimFrame) cancelAnimationFrame(tierAnimFrame);
+
+    tierHoldTimer = setTimeout(() => {
+      if (!isTierHoldingActive) return;
+      const startTime = performance.now();
+      let lastStepTime = startTime;
+
+      function tierLoop(timestamp) {
+        if (!isTierHoldingActive) return;
+        const elapsedTotal = (timestamp - startTime) / 1000;
+        const currentInterval = Math.max(20, 140 * Math.exp(-3.2 * elapsedTotal));
+
+        if (timestamp - lastStepTime >= currentInterval) {
+          handleTempoTierChange(direction);
+          lastStepTime = timestamp;
+        }
+
+        tierAnimFrame = requestAnimationFrame(tierLoop);
+      }
+      tierAnimFrame = requestAnimationFrame(tierLoop);
+    }, 100);
+  }
+
+  function stopTierHold() {
+    isTierHoldingActive = false;
+    if (tierHoldTimer) {
+      clearTimeout(tierHoldTimer);
+      tierHoldTimer = null;
+    }
+    if (tierAnimFrame) {
+      cancelAnimationFrame(tierAnimFrame);
+      tierAnimFrame = null;
+    }
+  }
+
+  function bindHoldButton(btn, delta) {
+    const start = (e) => {
+      e.preventDefault();
+      startHold(delta);
+    };
+    const stop = () => {
+      stopHold();
+    };
+
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('mouseup', stop);
+    btn.addEventListener('mouseleave', stop);
+
+    btn.addEventListener('touchstart', start, { passive: false });
+    btn.addEventListener('touchend', stop);
+    btn.addEventListener('touchcancel', stop);
+  }
+
+  bindHoldButton(slowerBtn, -1);
+  bindHoldButton(fasterBtn, 1);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === ' ') {
+      if (document.activeElement.tagName === 'INPUT') return;
+      e.preventDefault();
+      if (!e.repeat) toggleMetronome();
+    } else if (!isRunning && !isStopping) {
+      if (e.code === 'ArrowUp' || e.key === 'ArrowUp') {
+        if (document.activeElement.tagName === 'INPUT') return;
+        e.preventDefault();
+        if (e.repeat) return;
+        startHold(-1);
+      } else if (e.code === 'ArrowDown' || e.key === 'ArrowDown') {
+        if (document.activeElement.tagName === 'INPUT') return;
+        e.preventDefault();
+        if (e.repeat) return;
+        startHold(1);
+      } else if (e.code === 'ArrowRight' || e.key === 'ArrowRight') {
+        if (document.activeElement.tagName === 'INPUT') return;
+        e.preventDefault();
+        if (e.repeat) return;
+        startTierHold('next');
+      } else if (e.code === 'ArrowLeft' || e.key === 'ArrowLeft') {
+        if (document.activeElement.tagName === 'INPUT') return;
+        e.preventDefault();
+        if (e.repeat) return;
+        startTierHold('prev');
+      }
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowUp' || e.key === 'ArrowUp' || e.code === 'ArrowDown' || e.key === 'ArrowDown') {
+      stopHold();
+    } else if (e.code === 'ArrowRight' || e.key === 'ArrowRight' || e.code === 'ArrowLeft' || e.key === 'ArrowLeft') {
+      stopTierHold();
+    }
+  });
+
+  function playSound(time, isAccent) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    if (isAccent && accentEnabled) {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(3200, time);
+      osc.frequency.exponentialRampToValueAtTime(180, time + 0.018);
+
+      gain.gain.setValueAtTime(8.0, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.018);
+    } else {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(2400, time);
+      osc.frequency.exponentialRampToValueAtTime(140, time + 0.018);
+
+      gain.gain.setValueAtTime(6.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.018);
+    }
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(time);
+    osc.stop(time + 0.018);
+  }
+
+  function scheduler() {
+    if (isStopping) return;
+    while (nextNoteTime < audioCtx.currentTime + 0.1) {
+      const isAccent = (currentBeat === 0);
+      playSound(nextNoteTime, isAccent);
+      currentBeat = (currentBeat + 1) % beatsPerMeasure;
+      nextNoteTime += 60.0 / bpm;
+    }
+    timerID = setTimeout(scheduler, 25);
+  }
+
+  function animate() {
+    if (isRunning) {
+      const elapsed = audioCtx.currentTime - audioStartTime;
+      const omega = Math.PI * (bpm / 60);
+      const maxAngle = 10 + (240 - bpm) * (14 / 220);
+      
+      const currentAngle = Math.sin(elapsed * omega + Math.PI / 2) * maxAngle;
+
+      pendulum.style.transform = `rotate(${currentAngle}deg)`;
+
+      animFrameReq = requestAnimationFrame(animate);
+    } else if (isStopping) {
+      const elapsed = (performance.now() - stopStartTime) / 1000;
+      const progress = Math.min(1, elapsed / stopDuration);
+      
+      const dampingFactor = Math.exp(-6.5 * progress);
+      const currentAngle = stopStartAngle * dampingFactor * Math.cos(progress * Math.PI * 2.5);
+
+      pendulum.style.transform = `rotate(${currentAngle}deg)`;
+
+      if (progress < 1) {
+        animFrameReq = requestAnimationFrame(animate);
+      } else {
+        isStopping = false;
+        pendulum.style.transform = `rotate(0deg)`;
+        weight.classList.remove('disabled');
+        slowerBtn.disabled = false;
+        fasterBtn.disabled = false;
+      }
+    } else {
+      pendulum.style.transform = `rotate(0deg)`;
+    }
+  }
+
+  function toggleMetronome() {
+    if ('audioSession' in navigator) {
+      try {
+        navigator.audioSession.type = 'playback';
+      } catch (e) {
+        console.error("Échec de la configuration AudioSession:", e);
+      }
+    }
+
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (isRunning || isStopping) {
+      if (isRunning) {
+        clearTimeout(timerID);
+        const elapsed = audioCtx.currentTime - audioStartTime;
+        const maxAngle = 10 + (240 - bpm) * (14 / 220);
+        const omega = Math.PI * (bpm / 60);
+        stopStartAngle = Math.sin(elapsed * omega + Math.PI / 2) * maxAngle;
+        stopStartTime = performance.now();
+        
+        stopDuration = Math.min(0.4, (60.0 / bpm) * 0.5);
+        
+        isRunning = false;
+        isStopping = true;
+      } else {
+        isStopping = false;
+        if (animFrameReq) cancelAnimationFrame(animFrameReq);
+        pendulum.style.transform = `rotate(0deg)`;
+        weight.classList.remove('disabled');
+        slowerBtn.disabled = false;
+        fasterBtn.disabled = false;
+      }
+      hubBtn.style.borderColor = '#555660';
+    } else {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      isStopping = false;
+      isRunning = true;
+      weight.classList.add('disabled');
+      slowerBtn.disabled = true;
+      fasterBtn.disabled = true;
+      currentBeat = 0;
+      activeBpm = targetBpm;
+      bpm = Math.round(targetBpm);
+      
+      audioStartTime = audioCtx.currentTime;
+      nextNoteTime = audioStartTime;
+      
+      scheduler();
+      animFrameReq = requestAnimationFrame(animate);
+      hubBtn.style.borderColor = '#ffffff';
+    }
+  }
+
+  hubBtn.addEventListener('click', toggleMetronome);
+
+  resizeMetronome();
+  updateUI(targetBpm);
+</script>
+</body>
+</html>
