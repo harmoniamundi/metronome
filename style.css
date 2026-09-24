@@ -29,7 +29,6 @@ html, body {
   position: relative;
   width: 460px;
   height: 590px;
-  filter: drop-shadow(0 25px 35px rgba(0, 0, 0, 0.9));
   transform-origin: center center;
   overflow: visible;
   flex-shrink: 0;
@@ -42,6 +41,7 @@ html, body {
   width: 350px;
   height: 100%;
   z-index: 1;
+  filter: drop-shadow(0 25px 35px rgba(0, 0, 0, 0.9));
 }
 
 .metronome-content {
@@ -323,7 +323,7 @@ html, body {
 .popover-menu {
   position: absolute;
   left: 275px;
-  bottom: 45px;
+  bottom: 85px;
   background: linear-gradient(180deg, #252730 0%, #111216 100%);
   border: 1px solid #555660;
   border-radius: 8px;
@@ -349,84 +349,119 @@ html, body {
   letter-spacing: 1px;
 }
 
-.beat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-
-.beat-opt {
-  padding: 6px 0;
-  font-size: 12px;
-  font-weight: 700;
+.beat-value {
   text-align: center;
-  background: radial-gradient(circle at 35% 35%, #2a2c34, #18191f);
-  border: 1px solid #444550;
-  border-radius: 4px;
-  color: #e0e0e0;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-white);
+  margin: 2px 0 6px;
 }
 
-.beat-opt:hover {
-  border-color: #888;
-  color: #fff;
-}
-
-.beat-opt.active {
-  background: linear-gradient(180deg, #ffffff 0%, #cccccc 100%);
-  color: #000000;
-  border-color: #ffffff;
-  box-shadow: 0 0 8px rgba(255,255,255,0.4);
-}
-
-.toggle-row {
+.beat-slider-labels {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0 1px;
+  margin-bottom: 2px;
+}
+
+.beat-slider-labels span {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--text-dim);
+  width: 12px;
+  text-align: center;
+}
+
+.beat-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  margin: 2px 0 12px;
+  background: transparent;
   cursor: pointer;
 }
 
-.toggle-lbl {
-  font-size: 10px;
-  font-weight: 600;
-  color: #c0c0d0;
-  line-height: 1.2;
-  max-width: 120px;
+.beat-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
 }
 
-.toggle-switch {
-  width: 36px;
-  height: 20px;
-  background: #1a1b20;
-  border: 1px solid #444550;
-  border-radius: 10px;
-  position: relative;
-  transition: background 0.2s, border-color 0.2s;
-  flex-shrink: 0;
-}
-
-.toggle-switch.on {
-  background: #e0e0e0;
-  border-color: #ffffff;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
-}
-
-.toggle-knob {
+.beat-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
   width: 14px;
   height: 14px;
-  background: #666770;
+  margin-top: -6px;
   border-radius: 50%;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.2s, background 0.2s;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+  cursor: pointer;
 }
 
-.toggle-switch.on .toggle-knob {
-  transform: translateX(16px);
-  background: #111216;
+.beat-slider::-moz-range-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+}
+
+.beat-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+
+.beat-notes-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.note-icon {
+  width: 18px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.note-icon:hover {
+  transform: scale(1.15);
+}
+
+.note-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.note-stem, .note-head {
+  transition: stroke 0.15s, fill 0.15s;
+}
+
+.note-icon .note-stem {
+  stroke: #444550;
+  stroke-width: 2;
+}
+
+.note-icon .note-head {
+  fill: #444550;
+}
+
+.note-icon.accented .note-stem {
+  stroke: #ffffff;
+}
+
+.note-icon.accented .note-head {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
 }

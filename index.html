@@ -105,7 +105,7 @@
   let activeBpm = 80;
   let visualBpm = 80;
   let beatsPerMeasure = 4;
-  let accentEnabled = false;
+  let accentedBeats = new Set();
   let currentBeat = 0;
   let isRunning = false;
   let isStopping = false;
@@ -168,53 +168,73 @@
   function buildBeatMenu() {
     beatMenu.innerHTML = '';
 
-    const title = document.createElement('div');
-    title.className = 'popover-title';
-    title.textContent = 'Temps par mesure';
-    beatMenu.appendChild(title);
+    const valueDisplay = document.createElement('div');
+    valueDisplay.className = 'beat-value';
+    valueDisplay.textContent = beatsPerMeasure;
+    beatMenu.appendChild(valueDisplay);
 
-    const grid = document.createElement('div');
-    grid.className = 'beat-grid';
-
+    const labelsRow = document.createElement('div');
+    labelsRow.className = 'beat-slider-labels';
     for (let i = 1; i <= 12; i++) {
-      const opt = document.createElement('div');
-      opt.className = `beat-opt ${i === beatsPerMeasure ? 'active' : ''}`;
-      opt.textContent = i;
-      opt.addEventListener('click', (e) => {
-        e.stopPropagation();
-        beatsPerMeasure = i;
-        batDisplay.textContent = i;
-        currentBeat = 0;
-        buildBeatMenu();
-      });
-      grid.appendChild(opt);
+      const lbl = document.createElement('span');
+      lbl.textContent = i;
+      labelsRow.appendChild(lbl);
     }
-    beatMenu.appendChild(grid);
+    beatMenu.appendChild(labelsRow);
 
-    const toggleRow = document.createElement('div');
-    toggleRow.className = 'toggle-row';
-    
-    const toggleLbl = document.createElement('span');
-    toggleLbl.className = 'toggle-lbl';
-    toggleLbl.textContent = 'Accentuer le premier temps';
-
-    const switchEl = document.createElement('div');
-    switchEl.className = `toggle-switch ${accentEnabled ? 'on' : ''}`;
-    
-    const knob = document.createElement('div');
-    knob.className = 'toggle-knob';
-    switchEl.appendChild(knob);
-
-    toggleRow.appendChild(toggleLbl);
-    toggleRow.appendChild(switchEl);
-
-    toggleRow.addEventListener('click', (e) => {
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '1';
+    slider.max = '12';
+    slider.step = '1';
+    slider.value = beatsPerMeasure;
+    slider.className = 'beat-slider';
+    slider.addEventListener('click', (e) => e.stopPropagation());
+    slider.addEventListener('input', (e) => {
       e.stopPropagation();
-      accentEnabled = !accentEnabled;
-      buildBeatMenu();
+      beatsPerMeasure = parseInt(slider.value, 10);
+      batDisplay.textContent = beatsPerMeasure;
+      valueDisplay.textContent = beatsPerMeasure;
+      currentBeat = 0;
+      for (const b of Array.from(accentedBeats)) {
+        if (b >= beatsPerMeasure) accentedBeats.delete(b);
+      }
+      buildNotesRow();
     });
+    beatMenu.appendChild(slider);
 
-    beatMenu.appendChild(toggleRow);
+    const notesRow = document.createElement('div');
+    notesRow.className = 'beat-notes-row';
+    notesRow.id = 'beatNotesRow';
+    beatMenu.appendChild(notesRow);
+
+    buildNotesRow();
+  }
+
+  function buildNotesRow() {
+    const notesRow = document.getElementById('beatNotesRow');
+    if (!notesRow) return;
+    notesRow.innerHTML = '';
+    for (let i = 0; i < beatsPerMeasure; i++) {
+      const isAccented = accentedBeats.has(i);
+      const noteBtn = document.createElement('div');
+      noteBtn.className = `note-icon ${isAccented ? 'accented' : ''}`;
+      noteBtn.innerHTML = `
+        <svg viewBox="0 0 20 40" class="note-svg">
+          <line x1="14" y1="2" x2="14" y2="26" class="note-stem" />
+          <ellipse cx="8" cy="30" rx="7" ry="5" class="note-head" transform="rotate(-15 8 30)"/>
+        </svg>`;
+      noteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (accentedBeats.has(i)) {
+          accentedBeats.delete(i);
+        } else {
+          accentedBeats.add(i);
+        }
+        buildNotesRow();
+      });
+      notesRow.appendChild(noteBtn);
+    }
   }
   buildBeatMenu();
 
@@ -600,13 +620,31 @@
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
-    if (isAccent && accentEnabled) {
+    if (isAccent) {
       osc.type = 'square';
       osc.frequency.setValueAtTime(3200, time);
       osc.frequency.exponentialRampToValueAtTime(180, time + 0.018);
 
       gain.gain.setValueAtTime(8.0, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.018);
+
+      // Couche basse ("thump") ajoutée uniquement sur le temps accentué :
+      // un clic aigu se distingue mal au casque, un coup de grave beaucoup plus.
+      const subOsc = audioCtx.createOscillator();
+      const subGain = audioCtx.createGain();
+
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(150, time);
+      subOsc.frequency.exponentialRampToValueAtTime(55, time + 0.05);
+
+      subGain.gain.setValueAtTime(1.6, time);
+      subGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+
+      subOsc.connect(subGain);
+      subGain.connect(audioCtx.destination);
+
+      subOsc.start(time);
+      subOsc.stop(time + 0.05);
     } else {
       osc.type = 'square';
       osc.frequency.setValueAtTime(2400, time);
@@ -626,7 +664,7 @@
   function scheduler() {
     if (isStopping) return;
     while (nextNoteTime < audioCtx.currentTime + 0.1) {
-      const isAccent = (currentBeat === 0);
+      const isAccent = accentedBeats.has(currentBeat);
       playSound(nextNoteTime, isAccent);
       currentBeat = (currentBeat + 1) % beatsPerMeasure;
       nextNoteTime += 60.0 / bpm;
