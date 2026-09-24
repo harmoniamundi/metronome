@@ -117,6 +117,7 @@
   let nextNoteTime = 0.0;
   let timerID = null;
   let animFrameReq = null;
+  let holdAnimFrame = null;
   let audioStartTime = 0;
 
   let isTransitioningBpm = false;
@@ -458,7 +459,7 @@
     isHoldingActive = true;
 
     if (holdTimer) clearTimeout(holdTimer);
-    if (animFrameReq) cancelAnimationFrame(animFrameReq);
+    if (holdAnimFrame) cancelAnimationFrame(holdAnimFrame);
 
     holdTimer = setTimeout(() => {
       if (!isHoldingActive) return;
@@ -478,9 +479,9 @@
           return;
         }
 
-        animFrameReq = requestAnimationFrame(accelerateLoop);
+        holdAnimFrame = requestAnimationFrame(accelerateLoop);
       }
-      animFrameReq = requestAnimationFrame(accelerateLoop);
+      holdAnimFrame = requestAnimationFrame(accelerateLoop);
     }, 250);
   }
 
@@ -490,9 +491,9 @@
       clearTimeout(holdTimer);
       holdTimer = null;
     }
-    if (animFrameReq) {
-      cancelAnimationFrame(animFrameReq);
-      animFrameReq = null;
+    if (holdAnimFrame) {
+      cancelAnimationFrame(holdAnimFrame);
+      holdAnimFrame = null;
     }
   }
 
