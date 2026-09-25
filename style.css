@@ -322,7 +322,7 @@ html, body {
 
 .popover-menu {
   position: absolute;
-  left: 275px;
+  left: 200px;
   bottom: 85px;
   background: linear-gradient(180deg, #252730 0%, #111216 100%);
   border: 1px solid #555660;
