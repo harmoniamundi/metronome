@@ -759,8 +759,8 @@
 
         isRunning = false;
         isStopping = true;
-        slowerBtn.disabled = true;
-        fasterBtn.disabled = true;
+        slowerBtn.disabled = false;
+        fasterBtn.disabled = false;
       } else {
         isStopping = false;
         if (animFrameReq) cancelAnimationFrame(animFrameReq);
