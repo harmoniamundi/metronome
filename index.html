@@ -635,30 +635,30 @@
     const gain = audioCtx.createGain();
 
     if (isAccent) {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(3200, time);
-      osc.frequency.exponentialRampToValueAtTime(180, time + 0.018);
+      // Son de type "wood block" aigu et fort : pas de descente de pitch
+      // (contrairement à un clic), timbre fixe et percussif, décroissance très rapide.
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2600, time);
+      osc.frequency.exponentialRampToValueAtTime(2200, time + 0.01);
 
-      gain.gain.setValueAtTime(8.0, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.018);
+      gain.gain.setValueAtTime(9.0, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.014);
 
-      // Couche basse ("thump") ajoutée uniquement sur le temps accentué :
-      // un clic aigu se distingue mal au casque, un coup de grave beaucoup plus.
+      // Couche additionnelle plus grave pour donner le "corps" du bloc de bois
       const subOsc = audioCtx.createOscillator();
       const subGain = audioCtx.createGain();
 
-      subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(150, time);
-      subOsc.frequency.exponentialRampToValueAtTime(55, time + 0.05);
+      subOsc.type = 'square';
+      subOsc.frequency.setValueAtTime(1100, time);
 
-      subGain.gain.setValueAtTime(1.6, time);
-      subGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      subGain.gain.setValueAtTime(5.0, time);
+      subGain.gain.exponentialRampToValueAtTime(0.001, time + 0.01);
 
       subOsc.connect(subGain);
       subGain.connect(audioCtx.destination);
 
       subOsc.start(time);
-      subOsc.stop(time + 0.05);
+      subOsc.stop(time + 0.01);
     } else {
       osc.type = 'square';
       osc.frequency.setValueAtTime(2400, time);
