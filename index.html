@@ -675,15 +675,30 @@
     osc.stop(time + 0.018);
   }
 
+  // Horloge dans un Web Worker : les timers d'un onglet en arrière-plan sont
+  // fortement bridés (1 s, voire 1 min) dans le thread principal, pas dans un worker.
+  let tickWorker = null;
+  function getTickWorker() {
+    if (!tickWorker) {
+      const src = "let id=null;onmessage=e=>{if(e.data==='start'){if(id===null)id=setInterval(()=>postMessage('tick'),25);}else if(e.data==='stop'){clearInterval(id);id=null;}};";
+      tickWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      tickWorker.onmessage = () => scheduler();
+    }
+    return tickWorker;
+  }
+
   function scheduler() {
-    if (isStopping) return;
-    while (nextNoteTime < audioCtx.currentTime + 0.1) {
+    if (!isRunning) return;
+    // Si le thread a été gelé, on se recale au lieu de rejouer un paquet de clics en retard
+    if (nextNoteTime < audioCtx.currentTime - 0.05) {
+      nextNoteTime = audioCtx.currentTime + 0.05;
+    }
+    while (nextNoteTime < audioCtx.currentTime + 0.25) {
       const isAccent = accentedBeats.has(currentBeat);
       playSound(nextNoteTime, isAccent);
       currentBeat = (currentBeat + 1) % beatsPerMeasure;
       nextNoteTime += 60.0 / bpm;
     }
-    timerID = setTimeout(scheduler, 25);
   }
 
   function animate() {
@@ -735,11 +750,15 @@
 
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // macOS/Safari/Chrome peuvent suspendre le contexte audio : on le relance
+      audioCtx.onstatechange = () => {
+        if (isRunning && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+      };
     }
 
     if (isRunning || isStopping) {
       if (isRunning) {
-        clearTimeout(timerID);
+        getTickWorker().postMessage('stop');
         stopHold();
         stopTierHold();
         if (isTransitioningBpm) {
@@ -787,12 +806,17 @@
       lastFrameAudioTime = audioStartTime;
       
       scheduler();
+      getTickWorker().postMessage('start');
       animFrameReq = requestAnimationFrame(animate);
       hubBtn.style.borderColor = '#ffffff';
     }
   }
 
   hubBtn.addEventListener('click', toggleMetronome);
+
+  document.addEventListener('visibilitychange', () => {
+    if (isRunning && audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+  });
 
   resizeMetronome();
   updateUI(targetBpm);
