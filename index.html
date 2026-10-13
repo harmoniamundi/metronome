@@ -4,7 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tempus fugit</title>
-<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Tempus fugit">
+<link rel="manifest" href="app/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="app/icon-192.png">
+<link rel="apple-touch-icon" href="app/apple-touch-icon.png">
+<link rel="stylesheet" href="app/style.css">
 </head>
 <body>
 
@@ -820,6 +828,15 @@
 
   resizeMetronome();
   updateUI(targetBpm);
+
+  // Fonctionnement hors ligne : le service worker (sw.js, à la racine) met
+  // l'appli en cache. Il exige https ou localhost (pas file://).
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
