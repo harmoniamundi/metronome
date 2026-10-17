@@ -818,7 +818,75 @@
       animFrameReq = requestAnimationFrame(animate);
       hubBtn.style.borderColor = '#ffffff';
     }
+    syncMediaSession();
   }
+
+  // --- Touches médias (⏯ / F8 sur un clavier de MacBook) ---------------------
+  // Le navigateur n'associe les touches médias à une page que si elle joue un
+  // vrai élément <audio> (Web Audio seul ne suffit pas). On fait donc tourner en
+  // boucle un son de garde pendant que le métronome joue, et on branche les
+  // actions de l'API Media Session sur toggleMetronome().
+  // Firefox ignore les médias « inaudibles » ou de moins de 3 s : le son de garde
+  // dure donc 5 s et contient un souffle à -66 dBFS, au-dessus de son seuil
+  // d'audibilité (-72 dBFS) mais imperceptible à l'oreille.
+  // À noter : il faut avoir interagi une fois avec la page (clic, Espace) après
+  // son chargement ; ensuite ⏯ lance et arrête le métronome même hors de l'onglet.
+  let keepAliveAudio = null;
+
+  function makeKeepAliveWavUrl() {
+    const rate = 8000, secs = 5, n = rate * secs; // 16 bits mono
+    const buf = new ArrayBuffer(44 + n * 2);
+    const v = new DataView(buf);
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    str(36, 'data'); v.setUint32(40, n * 2, true);
+    // sinus 100 Hz, amplitude 16/32768 (≈ -66 dBFS) ; 500 périodes exactes → boucle sans clic
+    for (let i = 0; i < n; i++) {
+      v.setInt16(44 + i * 2, Math.round(16 * Math.sin(2 * Math.PI * 100 * i / rate)), true);
+    }
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  }
+
+  function syncMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    if (!keepAliveAudio) {
+      keepAliveAudio = new Audio(makeKeepAliveWavUrl());
+      keepAliveAudio.loop = true;
+    }
+    if (isRunning) {
+      keepAliveAudio.play().catch(() => {});
+      navigator.mediaSession.playbackState = 'playing';
+    } else {
+      keepAliveAudio.pause();
+      navigator.mediaSession.playbackState = 'paused';
+    }
+  }
+
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Tempus fugit',
+        artist: 'Métronome',
+        artwork: [{ src: 'app/icon-512.png', sizes: '512x512', type: 'image/png' }]
+      });
+    } catch (e) {}
+    const handlers = {
+      play: () => {
+        if (isStopping) toggleMetronome();   // termine l'arrêt en cours
+        if (!isRunning) toggleMetronome();
+      },
+      pause: () => { if (isRunning) toggleMetronome(); },
+      stop:  () => { if (isRunning) toggleMetronome(); }
+    };
+    for (const [action, fn] of Object.entries(handlers)) {
+      try { navigator.mediaSession.setActionHandler(action, fn); } catch (e) {}
+    }
+  }
+  setupMediaSession();
 
   hubBtn.addEventListener('click', toggleMetronome);
 

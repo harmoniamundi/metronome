@@ -2,7 +2,7 @@
 // Stratégie : on sert le cache immédiatement et on le met à jour en arrière-plan
 // (une mise à jour publiée est donc visible au 2e chargement). Pour forcer le
 // renouvellement du cache d'un coup, incrémenter CACHE_VERSION.
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = 'tempus-fugit-' + CACHE_VERSION;
 
 const ASSETS = [
